@@ -11,7 +11,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/adityaglobe/Zomato_Clone_Food_Delivery_Web_Application.git'
+                    url: 'https://github.com/Divyanshu-Chaudhary/Zomato_Clone_Food_Delivery_Web_Application.git'
             }
         }
 
