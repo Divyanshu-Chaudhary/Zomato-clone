@@ -2,23 +2,27 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOME      = tool 'sonar-scanner'
-        IMAGE_NAME      = "zomato-django-app"
-        CONTAINER_NAME  = "zomato_app"
-        APP_DIR         = "app_src"
+        SONAR_HOME             = tool 'sonar-scanner'
+        IMAGE_NAME             = 'zomato-django-app'
+        CONTAINER_NAME         = 'zomato_app'
+
+        // Folder to avoid overwriting the Jenkinsfile repo workspace checkout
+        APP_DIR                = 'app_src'
+
+        // IMPORTANT: This credential MUST exist in Jenkins (Username/Password, password = GitHub PAT)
+        GITHUB_CREDENTIALS_ID  = 'github-pat'
+
+        APP_REPO_URL           = 'https://github.com/Divyanshu-Chaudhary/Zomato_Clone_Food_Delivery_Web_Application.git'
+        APP_REPO_BRANCH        = 'main'
     }
 
     stages {
-
-        // Jenkins already checks out the Jenkinsfile repo in "Declarative: Checkout SCM".
-        // This stage clones your actual application repo into a subfolder (prevents workspace overwrite).
         stage('Clone Application Repository') {
             steps {
                 dir("${APP_DIR}") {
-                    // Create a Jenkins credential like "github-pat" (Username+Password where password = GitHub PAT)
-                    git credentialsId: 'github-pat',
-                        url: 'https://github.com/Divyanshu-Chaudhary/Zomato_Clone_Food_Delivery_Web_Application.git',
-                        branch: 'main'
+                    git credentialsId: "${GITHUB_CREDENTIALS_ID}",
+                        url: "${APP_REPO_URL}",
+                        branch: "${APP_REPO_BRANCH}"
                 }
             }
         }
@@ -53,7 +57,7 @@ pipeline {
     }
 
     post {
-        success { echo "✅ Zomato Django App deployed successfully!" }
-        failure { echo "❌ Deployment failed. Check logs." }
+        success { echo '✅ Zomato Django App deployed successfully!' }
+        failure { echo '❌ Deployment failed. Check logs.' }
     }
 }
