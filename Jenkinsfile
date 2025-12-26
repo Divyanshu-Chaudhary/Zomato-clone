@@ -24,7 +24,7 @@ pipeline {
             steps {
                 // Leave empty to use default server, OR use the actual server name from:
                 // Jenkins -> Manage Jenkins -> Configure System -> SonarQube servers -> Name
-                withSonarQubeEnv() {
+                withSonarQubeEnv('sonar') {
                     sh '''
                         $SONAR_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=zomato-clone \
