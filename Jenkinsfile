@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds')
         DOCKER_IMAGE = "divyanshu067/zomato-clone"
-        SONAR_HOME = tool 'sonar-scanner'
+        SONAR_HOME = tool 'sonar-scanner'  // This is the scanner TOOL
     }
     
     stages {
@@ -22,7 +22,9 @@ pipeline {
         
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar-scanner') {
+                // Leave empty to use default server, OR use the actual server name from:
+                // Jenkins -> Manage Jenkins -> Configure System -> SonarQube servers -> Name
+                withSonarQubeEnv() {
                     sh '''
                         $SONAR_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=zomato-clone \
@@ -56,7 +58,7 @@ pipeline {
                     sh '''
                         git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/Divyanshu-Chaudhary/zomato-manifest.git
                         cd zomato-manifest
-                        sed -i "s|Divyanshu-Chaudhary/zomato-clone:.*|Divyanshu-Chaudhary/zomato-clone:${BUILD_NUMBER}|g" deployment.yaml
+                        sed -i "s|divyanshu067/zomato-clone:.*|divyanshu067/zomato-clone:${BUILD_NUMBER}|g" deployment.yaml
                         git config user.email "jenkins@ci.com"
                         git config user.name "Jenkins"
                         git add .
@@ -73,5 +75,4 @@ pipeline {
             sh 'docker logout || true'
         }
     }
-
 }
