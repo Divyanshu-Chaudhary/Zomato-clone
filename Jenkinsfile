@@ -2,62 +2,76 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOME             = tool 'sonar-scanner'
-        IMAGE_NAME             = 'zomato-django-app'
-        CONTAINER_NAME         = 'zomato_app'
-
-        // Folder to avoid overwriting the Jenkinsfile repo workspace checkout
-        APP_DIR                = 'app_src'
-
-        // IMPORTANT: This credential MUST exist in Jenkins (Username/Password, password = GitHub PAT)
-        GITHUB_CREDENTIALS_ID  = 'github-pat'
-
-        APP_REPO_URL           = 'https://github.com/Divyanshu-Chaudhary/Zomato_Clone_Food_Delivery_Web_Application.git'
-        APP_REPO_BRANCH        = 'main'
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds')
+        DOCKER_IMAGE = "divyanshu067/zomato-clone"
+        SONAR_HOME = tool 'sonar-scanner'
     }
-
+    
     stages {
-        stage('Clone Application Repository') {
+        stage('Clean Workspace') {
             steps {
-                dir("${APP_DIR}") {
-                    git credentialsId: "${GITHUB_CREDENTIALS_ID}",
-                        url: "${APP_REPO_URL}",
-                        branch: "${APP_REPO_BRANCH}"
+                cleanWs()
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Divyanshu-Chaudhary/Zomato-clone.git'
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh '''
+                        $SONAR_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=zomato-clone \
+                        -Dsonar.projectName="Zomato Clone" \
+                        -Dsonar.sources=. \
+                        -Dsonar.language=py
+                    '''
                 }
             }
         }
-
-        stage('Build Docker Image') {
+        
+        stage('Docker Build') {
             steps {
-                dir("${APP_DIR}") {
-                    sh 'docker build -t $IMAGE_NAME .'
+                sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+            }
+        }
+        
+        stage('Docker Push') {
+            steps {
+                sh '''
+                    echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin
+                    docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                    docker push ${DOCKER_IMAGE}:latest
+                '''
+            }
+        }
+        
+        stage('Update Manifest') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    sh '''
+                        git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/Divyanshu-Chaudhary/zomato-manifest.git
+                        cd zomato-manifest
+                        sed -i "s|Divyanshu-Chaudhary/zomato-clone:.*|Divyanshu-Chaudhary/zomato-clone:${BUILD_NUMBER}|g" deployment.yaml
+                        git config user.email "jenkins@ci.com"
+                        git config user.name "Jenkins"
+                        git add .
+                        git commit -m "Update image to build ${BUILD_NUMBER}"
+                        git push
+                    '''
                 }
-            }
-        }
-
-        stage('Stop Existing Container') {
-            steps {
-                sh '''
-                  docker stop $CONTAINER_NAME || true
-                  docker rm $CONTAINER_NAME || true
-                '''
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                sh '''
-                  docker run -d \
-                    --name $CONTAINER_NAME \
-                    -p 8000:8000 \
-                    $IMAGE_NAME
-                '''
             }
         }
     }
-
+    
     post {
-        success { echo '✅ Zomato Django App deployed successfully!' }
-        failure { echo '❌ Deployment failed. Check logs.' }
+        always {
+            sh 'docker logout || true'
+        }
     }
+
 }
