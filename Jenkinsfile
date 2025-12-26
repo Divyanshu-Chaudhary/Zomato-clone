@@ -2,16 +2,17 @@ pipeline {
     agent any
 
     environment {
+        SONAR_HOME = tool 'sonar-scanner'
         IMAGE_NAME = "zomato-django-app"
         CONTAINER_NAME = "zomato_app"
     }
 
     stages {
-
         stage('Clone Repository') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Divyanshu-Chaudhary/Zomato_Clone_Food_Delivery_Web_Application.git'
+                git credentialsId: 'dockerhub-creds',
+                    url: 'https://github.com/Divyanshu-Chaudhary/Zomato_Clone_Food_Delivery_Web_Application.git',
+                    branch: 'main'
             }
         }
 
