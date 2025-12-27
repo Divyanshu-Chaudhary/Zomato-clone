@@ -54,7 +54,7 @@ pipeline {
         
         stage('Update Manifest') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                withCredentials([usernamePassword(credentialsId: 'github-cred', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                     sh '''
                         git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/Divyanshu-Chaudhary/zomato-manifest.git
                         cd zomato-manifest
